@@ -1,0 +1,218 @@
+on init
+    # Burn
+    write /dev/cpuset/foreground/cpus 0-5
+    write /dev/cpuset/background/cpus 0-5
+    write /dev/cpuset/system-background/cpus 0-5
+    write /dev/cpuset/top-app/cpus 0-5
+
+on boot
+    # Update foreground cpuset now that processors are up
+    # reserve CPU 3 for the top app and camera daemon
+    write /dev/cpuset/foreground/cpus 0-2,4-5
+    write /dev/cpuset/background/cpus 0
+    write /dev/cpuset/system-background/cpus 0-2
+    write /dev/cpuset/top-app/cpus 0-5
+
+    # Add a cpuset for the camera daemon
+    # we want all the little cores for camera
+    mkdir /dev/cpuset/camera-daemon
+    write /dev/cpuset/camera-daemon/cpus 0-3
+    write /dev/cpuset/camera-daemon/mems 0
+    chown system system /dev/cpuset/camera-daemon
+    chown system system /dev/cpuset/camera-daemon/tasks
+    chmod 0664 /dev/cpuset/camera-daemon/tasks
+
+    # Enable sched boost
+    write /proc/sys/kernel/sched_boost 1
+
+on late-fs
+    # boot time fs tune
+    write /sys/block/mmcblk0/queue/iostats 0
+    write /sys/block/mmcblk0/queue/scheduler cfq
+    write /sys/block/mmcblk0/queue/iosched/slice_idle 0
+    write /sys/block/mmcblk0/queue/read_ahead_kb 2048
+    write /sys/block/mmcblk0/queue/nr_requests 256
+
+on property:sys.boot_completed=1
+    # end boot time fs tune
+    write /sys/block/mmcblk0/queue/read_ahead_kb 1024
+    write /sys/block/mmcblk0/queue/nr_requests 128
+    write /sys/block/mmcblk0/queue/iostats 1
+    write /sys/block/mmcblk0/queue/scheduler deadline
+    write /sys/block/mmcblk1/queue/read_ahead_kb 1024
+    write /sys/block/mmcblk1/queue/scheduler deadline
+
+    # HMP scheduler (big.Little cluster related) settings
+    write /proc/sys/kernel/sched_boost 0
+    write /proc/sys/kernel/sched_upmigrate 98
+    write /proc/sys/kernel/sched_downmigrate 85
+
+    # android background processes are set to nice 10. Never schedule these on the a57s.
+    write /proc/sys/kernel/sched_upmigrate_min_nice 9
+
+    write /proc/sys/kernel/sched_window_stats_policy 2
+    write /proc/sys/kernel/sched_ravg_hist_size 5
+
+    write /sys/devices/system/cpu/cpu0/sched_mostly_idle_nr_run 6
+    write /sys/devices/system/cpu/cpu1/sched_mostly_idle_nr_run 6
+    write /sys/devices/system/cpu/cpu2/sched_mostly_idle_nr_run 6
+    write /sys/devices/system/cpu/cpu3/sched_mostly_idle_nr_run 6
+    write /sys/devices/system/cpu/cpu4/sched_mostly_idle_nr_run 6
+    write /sys/devices/system/cpu/cpu5/sched_mostly_idle_nr_run 6
+
+    write /sys/class/devfreq/mincpubw/governor "cpufreq"
+    write /sys/class/devfreq/cpubw/governor "bw_hwmon"
+    write /sys/class/devfreq/cpubw/bw_hwmon/io_percent 20
+    write /sys/class/devfreq/cpubw/bw_hwmon/guard_band_mbps 30
+
+    # Changes to optimize performance and power consumption
+    write /proc/sys/kernel/sched_freq_inc_notify 200000
+
+    # Disable thermal
+    write /sys/module/msm_thermal/core_control/enabled 0
+
+    # configure governor settings for little cluster
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor interactive
+    restorecon -R /sys/devices/system/cpu # must restore after interactive
+    chmod 666 /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 400000
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1401600
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay "0 691200:20000 806400:24000 1190400:38000"
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/fastlane 0
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/fastlane_threshold 50
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 99
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_lowspeed_load 10
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 806400
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/align_windows 0
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads "60 400000:62 691200:70 806400:76 1017600:81 1190400:86 1305600:89 1382400:91 1401600:94"
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/max_freq_hysteresis 20000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 45000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/powersave_bias 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 35000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate_screenoff 50000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_slack 40000
+
+    # configure governor settings for big cluster
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor interactive
+    restorecon -R /sys/devices/system/cpu # must restore after interactive
+    chmod 666 /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 883200
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq 1804800
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/above_hispeed_delay "30000 1056000:10000 1305600:30000"
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/fastlane 0
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/fastlane_threshold 50
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/go_hispeed_load 99
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/go_lowspeed_load 10
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/hispeed_freq 1056000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/align_windows 0
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/target_loads "83 883200:84 998400:85 1113600:84 1190400:86 1305600:85 1612800:83 1804800:95"
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/max_freq_hysteresis 40000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/powersave_bias 1
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_rate 20000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_rate_screenoff 50000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_slack 40000
+
+    # Set Swappiness
+    write /proc/sys/vm/swappiness 60
+
+    # HMP Task packing settings for 8956
+    write /proc/sys/kernel/sched_small_task 30
+    write /sys/devices/system/cpu/cpu0/sched_mostly_idle_load 25
+    write /sys/devices/system/cpu/cpu1/sched_mostly_idle_load 25
+    write /sys/devices/system/cpu/cpu2/sched_mostly_idle_load 25
+    write /sys/devices/system/cpu/cpu3/sched_mostly_idle_load 25
+    write /sys/devices/system/cpu/cpu4/sched_mostly_idle_load 25
+    write /sys/devices/system/cpu/cpu5/sched_mostly_idle_load 25
+
+    # Bring up all cores online
+    write /sys/devices/system/cpu/cpu1/online 1
+    write /sys/devices/system/cpu/cpu2/online 1
+    write /sys/devices/system/cpu/cpu3/online 1
+    write /sys/devices/system/cpu/cpu4/online 1
+    write /sys/devices/system/cpu/cpu5/online 1
+
+    # Enable LPM Prediction
+    write /sys/module/lpm_levels/parameters/lpm_prediction 1
+
+    # Enable Low power modes
+    write /sys/module/lpm_levels/parameters/sleep_disabled 0
+
+    # Disable L2 GDHS on 8976
+    write /sys/module/lpm_levels/system/a53/a53-l2-gdhs/idle_enabled "N"
+    write /sys/module/lpm_levels/system/a72/a72-l2-gdhs/idle_enabled "N"
+
+    # Re-enable thermal
+    write /sys/module/msm_thermal/core_control/enabled 1
+
+    # Enable timer migration to little cluster
+    write /proc/sys/kernel/power_aware_timer_migration 1
+
+    # Enable sched colocation and colocation inheritance
+    write /proc/sys/kernel/sched_grp_upmigrate 130
+    write /proc/sys/kernel/sched_grp_downmigrate 110
+    write /proc/sys/kernel/sched_enable_thread_grouping 1
+
+    # set (super) packing parameters
+    write /sys/devices/system/cpu/cpu0/sched_mostly_idle_freq 1017600
+    write /sys/devices/system/cpu/cpu4/sched_mostly_idle_freq 0
+
+    # Setup adaptive LMK
+    chmod 0660 /sys/module/lowmemorykiller/parameters/minfree
+    write /sys/module/lowmemorykiller/parameters/enable_adaptive_lmk 1
+    write /sys/module/lowmemorykiller/parameters/vmpressure_file_min 81250
+
+    # Setup process-reclaim
+    write /sys/module/process_reclaim/parameters/enable_process_reclaim 1
+    write /sys/module/process_reclaim/parameters/pressure_min 10
+    write /sys/module/process_reclaim/parameters/per_swap_size 1024
+    write /sys/module/process_reclaim/parameters/swap_opt_eff 30
+    write /sys/module/process_reclaim/parameters/pressure_max 70
+
+    # Set Thermal
+    write /sys/module/msm_thermal/core_control/enabled 0
+    write /sys/module/msm_thermal/parameters/enabled N
+    write /sys/module/msm_thermal/parameters/temp_threshold 60
+
+    # enable Audio High Performance Mode
+    write /sys/module/snd_soc_msm8x16_wcd/parameters/high_perf_mode 1
+
+    # Run our kernel script
+    exec u:r:qti_init_shell:s0 -- /vendor/bin/sh /vendor/bin/init.emeriss.sh
+
+    # Disable perfd
+    stop perfd
+
+on charger
+    # Start thermal engine
+    start thermal-engine
+
+    # Disable thermal
+    write /sys/module/msm_thermal/core_control/enabled 0
+
+    # Bring CPUs online
+    write /sys/devices/system/cpu/cpu1/online 1
+    write /sys/devices/system/cpu/cpu2/online 1
+    write /sys/devices/system/cpu/cpu3/online 1
+    write /sys/devices/system/cpu/cpu4/online 1
+    write /sys/devices/system/cpu/cpu5/online 1
+
+    # Configure governor settings for little cluster
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "powersave"
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 400000
+
+    # Configure governor settings for big cluster
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor "powersave"
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 400000
+
+    # Bring CPUs offline
+    write /sys/devices/system/cpu/cpu1/online 0
+    write /sys/devices/system/cpu/cpu2/online 0
+    write /sys/devices/system/cpu/cpu3/online 0
+    write /sys/devices/system/cpu/cpu4/online 0
+    write /sys/devices/system/cpu/cpu5/online 0
+
+    # Enable thermal
+    write /sys/module/msm_thermal/core_control/enabled 1

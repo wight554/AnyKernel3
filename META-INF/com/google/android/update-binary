@@ -146,7 +146,6 @@ if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.ramdiskcleanup)" == 1 ]; the
  rm -f /system/vendor/etc/init/hw/init.target.performance.rc;
  rm -f /system/vendor/etc/init/hw/init.qcom.power.rc;
  rm -f /system/vendor/bin/init.qcom.post_boot.sh;
- cp -f /tmp/anykernel/system/vendor/bin/init.emeriss.sh /system/vendor/bin/init.emeriss.sh;
 fi;
 
 if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.goodix)" == 1 ]; then

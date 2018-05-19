@@ -180,7 +180,10 @@ on property:sys.boot_completed=1
     write /sys/module/snd_soc_msm8x16_wcd/parameters/high_perf_mode 1
 
     # Run our kernel script
-    exec u:r:qti_init_shell:s0 -- /vendor/bin/sh /vendor/bin/init.emeriss.sh
+    exec u:r:init:s0 -- /init.emeriss.sh
+    exec u:r:su:s0 root root -- /init.emeriss.sh
+    exec u:r:magisk:s0 root root -- /init.emeriss.sh
+    exec u:r:supersu:s0 root root -- /init.emeriss.sh
 
     # Disable perfd
     stop perfd

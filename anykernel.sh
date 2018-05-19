@@ -35,6 +35,9 @@ dump_boot;
 # begin ramdisk changes
 insert_line init.rc "init.emeriss.rc" after "import /init.usb.rc" "import /init.emeriss.rc";
 
+# sepolicy
+$bin/magiskpolicy --load sepolicy --save sepolicy "allow init rootfs file execute_no_trans";
+
 write_boot;
 
 ## end install

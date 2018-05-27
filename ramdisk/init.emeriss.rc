@@ -4,45 +4,32 @@ on init
     write /sys/devices/soc/1da4000.ufshc/clkgate_enable 0
     write /sys/devices/soc/1da4000.ufshc/hibern8_on_idle_enable 0
 
-    # Set up schedtune
-    write /dev/stune/foreground/schedtune.prefer_idle 1
-    write /dev/stune/top-app/schedtune.boost 10
-    write /dev/stune/top-app/schedtune.prefer_idle 1
-
     write /sys/module/lpm_levels/parameters/sleep_disabled Y
+
+    # Set up schedtune
+    write /dev/stune/background/schedtune.colocate 0
+    write /dev/stune/foreground/schedtune.colocate 0
+    write /dev/stune/foreground/schedtune.sched_boost_no_override 1
+    write /dev/stune/schedtune.colocate 0
+    write /dev/stune/top-app/schedtune.colocate 1
+    write /dev/stune/top-app/schedtune.sched_boost_no_override 1
 
 # For cpusets initialize for Silver Only first and then Silver + Gold
 # Silver Only configuration cannot work with 0-7
 on boot
-    write /dev/cpuset/top-app/cpus 0-3
-    write /dev/cpuset/foreground/cpus 0-3
-    write /dev/cpuset/background/cpus 0-3
-    write /dev/cpuset/system-background/cpus 0-3
-
     write /dev/cpuset/top-app/cpus 0-7
+    write /dev/cpuset/foreground/boost/cpus 0-7
     write /dev/cpuset/foreground/cpus 0-7
     write /dev/cpuset/background/cpus 0-7
     write /dev/cpuset/system-background/cpus 0-7
+    write /dev/cpuset/camera-daemon/cpus 0-3
 
-    # Add a cpuset for the camera daemon
+    # Create camera daemon cpusets
     mkdir /dev/cpuset/camera-daemon 0750 cameraserver cameraserver
     write /dev/cpuset/camera-daemon/cpus 0
     write /dev/cpuset/camera-daemon/mems 0
     chown cameraserver cameraserver /dev/cpuset/camera-daemon/tasks
     chmod 0660 /dev/cpuset/camera-daemon/tasks
-
-    # Sound settings
-    write /sys/kernel/sound_control/earpiece_gain 10
-    write /sys/kernel/sound_control/mic_gain 10
-    write /sys/kernel/sound_control/headphone_gain "10 10"
-
-    # Don't treat storage as rotational
-    write /sys/block/sda/queue/rotational 0
-
-    # set default schedTune value for foreground/top-app (only affects EAS)
-    write /dev/stune/foreground/schedtune.prefer_idle 1
-    write /dev/stune/top-app/schedtune.prefer_idle 1
-    write /dev/stune/top-app/schedtune.boost 1
 
 on charger
     # Enable UFS powersaving
@@ -69,58 +56,108 @@ on charger
     write /sys/module/lpm_levels/parameters/sleep_disabled
 
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "userspace"
-    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 230000
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 300000
     write /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor "userspace"
-    write /sys/devices/system/cpu/cpu1/cpufreq/scaling_max_freq 230000
+    write /sys/devices/system/cpu/cpu1/cpufreq/scaling_max_freq 300000
 
+    wait /dev/block/bootdevice/by-name/system
+    mount ext4 /dev/block/bootdevice/by-name/system /system ro barrier=1
+
+    wait /dev/block/bootdevice/by-name/persist
     mount ext4 /dev/block/bootdevice/by-name/persist /persist nosuid nodev barrier=1
+
+    load_system_props
+
     start hvdcp_opti
-    setprop sys.usb.configfs 1
     start thermal-engine
+
+    setprop sys.usb.configfs 1
+    setprop sys.usb.config adb
 
 on late-fs
     # boot time fs tune
     write /sys/block/sda/queue/iostats 0
-    write /sys/block/sda/queue/scheduler cfq
+    write /sys/block/sde/queue/iostats 0
     write /sys/block/sda/queue/iosched/slice_idle 0
+    write /sys/block/sde/queue/iosched/slice_idle 0
+    write /sys/block/sda/queue/nr_requests 256
+    write /sys/block/sde/queue/nr_requests 256
     write /sys/block/sda/queue/read_ahead_kb 2048
     write /sys/block/sde/queue/read_ahead_kb 2048
-    write /sys/block/sda/queue/nr_requests 256
 
 on property:sys.boot_completed=1
     # end boot time fs tune
     write /sys/block/sda/queue/read_ahead_kb 1024
     write /sys/block/sde/queue/read_ahead_kb 1024
     write /sys/block/sda/queue/nr_requests 128
+    write /sys/block/sde/queue/nr_requests 128
     write /sys/block/sda/queue/iostats 1
-    write /sys/block/sda/queue/scheduler deadline
-    write /sys/block/sde/queue/scheduler deadline
+    write /sys/block/sde/queue/iostats 1
 
-    # disable thermal core control until CPU is configured
+    # Enable UFS powersaving
+    write /sys/devices/soc/1da4000.ufshc/clkscale_enable 1
+    write /sys/devices/soc/1da4000.ufshc/clkgate_enable 1
+    write /sys/devices/soc/1da4000.ufshc/hibern8_on_idle_enable 1
+
+    # Disable thermal bcl hotplug to switch governor
     write /sys/module/msm_thermal/core_control/enabled 0
 
-    # Configure schedutil
-    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "schedutil"
-    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor "schedutil"
+    # Configure core ctl
+    write /sys/devices/system/cpu/cpu4/core_ctl/min_cpus 0
+    write /sys/devices/system/cpu/cpu4/core_ctl/max_cpus 4
+    write /sys/devices/system/cpu/cpu4/core_ctl/busy_up_thres 60
+    write /sys/devices/system/cpu/cpu4/core_ctl/busy_down_thres 30
+    write /sys/devices/system/cpu/cpu4/core_ctl/offline_delay_ms 100
+    write /sys/devices/system/cpu/cpu4/core_ctl/is_big_cluster 1
+    write /sys/devices/system/cpu/cpu4/core_ctl/task_thres 4
 
-    write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/up_rate_limit_us 500
-    write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/down_rate_limit_us 20000
-    write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/iowait_boost_enable 1
-    write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/up_rate_limit_us 500
-    write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/down_rate_limit_us 20000
-    write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/iowait_boost_enable 1
+    # Bring CPUs online
+    write /sys/devices/system/cpu/cpu0/online 1
+    write /sys/devices/system/cpu/cpu1/online 1
+    write /sys/devices/system/cpu/cpu2/online 1
+    write /sys/devices/system/cpu/cpu3/online 1
+    write /sys/devices/system/cpu/cpu4/online 1
+    write /sys/devices/system/cpu/cpu5/online 1
+    write /sys/devices/system/cpu/cpu6/online 1
+    write /sys/devices/system/cpu/cpu7/online 1
 
-    # CPU is configured, re-enable thermal core control
-    write /sys/module/msm_thermal/core_control/enabled 1
+    # Configure governor settings for little cluster
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "interactive"
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/use_sched_load 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/use_migration_notif 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay 0
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 100
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 30000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 0
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads "70 672000:45 825600:50 1036800:60 1248000:70 1478400:85"
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/max_freq_hysteresis 100000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/ignore_hispeed_on_notif 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/enable_prediction 1
 
-    # Ensure minimum frequencies set to 230MHz
-    write /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq 230000
-    write /sys/devices/system/cpu/cpufreq/policy4/scaling_min_freq 2
+    # Configure governor settings for big cluster
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor "interactive"
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/use_sched_load 1
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/use_migration_notif 1
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/above_hispeed_delay "19000 1400000:39000 1700000:19000 1900000:79000"
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/go_hispeed_load 99
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/boostpulse_duration 18000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_rate 30000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/hispeed_freq 1574400
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/target_loads "87 1400000:31 1600000:45 1800000:66 1900000:93"
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/max_freq_hysteresis 39000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/ignore_hispeed_on_notif 1
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/enable_prediction 1
 
-    # Enable input boost configuration
+    # Input boost configuration
     write /sys/module/cpu_boost/parameters/input_boost_freq "0:1036800"
-    write /sys/module/cpu_boost/parameters/dynamic_stune_boost 15
-    write /sys/module/cpu_boost/parameters/input_boost_ms 500
+    write /sys/module/cpu_boost/parameters/input_boost_ms 150
+
+    # Enable thermal and BCL hotplug
+    write /sys/module/msm_thermal/core_control/enabled 1
 
     # Enable bus-dcvs
     write /sys/class/devfreq/soc:qcom,cpubw/governor "bw_hwmon"
@@ -149,7 +186,7 @@ on property:sys.boot_completed=1
 
     write /sys/class/devfreq/soc:qcom,mincpubw/governor "cpufreq"
 
-    # Setup power retention
+    # Disable retention
     write /sys/module/lpm_levels/system/pwr/cpu0/ret/idle_enabled N
     write /sys/module/lpm_levels/system/pwr/cpu1/ret/idle_enabled N
     write /sys/module/lpm_levels/system/pwr/cpu2/ret/idle_enabled N
@@ -166,15 +203,21 @@ on property:sys.boot_completed=1
 
     # Setup cpusets
     write /dev/cpuset/top-app/cpus 0-7
-    write /dev/cpuset/foreground/boost/cpus 0-3,6-7
+    write /dev/cpuset/foreground/boost/cpus 4-7
     write /dev/cpuset/foreground/cpus 0-3,6-7
     write /dev/cpuset/background/cpus 0-1
-    write /dev/cpuset/system-background/cpus 0-3
+    write /dev/cpuset/system-background/cpus 0-2
     write /dev/cpuset/camera-daemon/cpus 0-3
 
-    # Enable Adaptive LMK
-    write /sys/module/lowmemorykiller/parameters/enable_adaptive_lmk 1
-    write /sys/module/lowmemorykiller/parameters/minfree "18432,23040,27648,51256,150296,200640"
-    write /sys/module/lowmemorykiller/parameters/vmpressure_file_min 162500
+    # Set up big.LITTLE scheduler configuration
+    write /proc/sys/kernel/sched_upmigrate 95
+    write /proc/sys/kernel/sched_downmigrate 90
+    write /proc/sys/kernel/sched_group_upmigrate 100
+    write /proc/sys/kernel/sched_group_downmigrate 95
+    write /proc/sys/kernel/sched_select_prev_cpu_us 0
+    write /proc/sys/kernel/sched_freq_inc_notify 400000
+    write /proc/sys/kernel/sched_freq_dec_notify 400000
+    write /proc/sys/kernel/sched_spill_nr_run 5
+    write /proc/sys/kernel/sched_restrict_cluster_spill 1
 
     setprop sys.post_boot.parsed 1

@@ -139,24 +139,15 @@ if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.modules)" == 1 ]; then
   mount -o ro,remount -t auto /vendor 2>/dev/null;
 fi;
 
-mount -o rw,remount -t auto /system;
 if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.ramdiskcleanup)" == 1 ]; then
+ mount -o rw,remount -t auto /system;
  ui_print "";
- ui_print "Modifying ramdisk for our needs...";
+ ui_print "Removing old ramdisk scripts...";
  rm -f /system/vendor/etc/init/hw/init.target.performance.rc;
  rm -f /system/vendor/etc/init/hw/init.qcom.power.rc;
  rm -f /system/vendor/bin/init.qcom.post_boot.sh;
+ mount -o ro,remount -t auto /system
 fi;
-
-if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.goodix)" == 1 ]; then
- ui_print "";
- ui_print "Installing custom Goodix lib...";
-    rm -f /system/lib64/hw/gxfingerprint.default.so;
-    rm -f /system/vendor/lib64/hw/gxfingerprint.default.so;
-    cp -f /tmp/anykernel/system/vendor/lib64/hw/gxfingerprint.default.so /system/vendor/lib64/hw/gxfingerprint.default.so;
-fi;
-
-mount -o ro,remount -t auto /system
 
 debugging;
 

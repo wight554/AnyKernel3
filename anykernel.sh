@@ -9,7 +9,6 @@ do.devicecheck=1
 do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
-do.ramdiskcleanup=1
 device.name1=chiron
 } # end properties
 
@@ -32,6 +31,9 @@ dump_boot;
 
 # begin ramdisk changes
 insert_line init.rc "init.emeriss.rc" after "import /init.usb.rc" "import /init.emeriss.rc";
+
+# sepolicy
+$bin/magiskpolicy --load sepolicy --save sepolicy "allow init rootfs file execute_no_trans";
 
 write_boot;
 

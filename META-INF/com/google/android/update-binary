@@ -139,14 +139,6 @@ if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.modules)" == 1 ]; then
   mount -o ro,remount -t auto /vendor 2>/dev/null;
 fi;
 
-if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.ramdiskcleanup)" == 1 ]; then
- mount -o rw,remount -t auto /system;
- ui_print "";
- ui_print "Removing old ramdisk scripts...";
- rm -f /system/vendor/etc/init/hw/init.target.performance.rc;
- mount -o ro,remount -t auto /system
-fi;
-
 debugging;
 
 if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.cleanup)" == 1 ]; then

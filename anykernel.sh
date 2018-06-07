@@ -9,7 +9,6 @@ do.devicecheck=1
 do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
-do.ramdiskcleanup=1
 device.name1=kenzo
 device.name2=kate
 } # end properties

@@ -3,7 +3,7 @@
 
 ## AnyKernel setup
 # begin properties
-properties() {
+properties() { '
 kernel.string=Emeriss by Wight554 @ xda-developers
 do.devicecheck=1
 do.modules=0
@@ -11,7 +11,7 @@ do.cleanup=1
 do.cleanuponabort=0
 device.name1=kenzo
 device.name2=kate
-} # end properties
+'; } # end properties
 
 # shell variables
 block=/dev/block/bootdevice/by-name/boot;

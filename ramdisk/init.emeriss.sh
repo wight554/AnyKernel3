@@ -35,23 +35,17 @@ sleep 10
 chmod 0664 /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 chmod 0664 /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
 
-write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay 0
-write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 100
-write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 0
-write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads "70 672000:45 825600:50 1036800:60 1248000:70 1478400:85"
-write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 40000
-write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 30000
+write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "schedutil"
+write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/up_rate_limit_us 500
+write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/down_rate_limit_us 20000
+write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/iowait_boost_enable 1
+write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 300000
 
-write /sys/devices/system/cpu/cpu4/cpufreq/interactive/go_hispeed_load 99
-write /sys/devices/system/cpu/cpu4/cpufreq/interactive/hispeed_freq 1574400
-write /sys/devices/system/cpu/cpu4/cpufreq/interactive/above_hispeed_delay "19000 1400000:39000 1700000:19000 2100000:79000"
-write /sys/devices/system/cpu/cpu4/cpufreq/interactive/target_loads "85 1728000:80 2112000:90 2342400:95"
-write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_rate 30000
-write /sys/devices/system/cpu/cpu4/cpufreq/interactive/min_sample_time 19000
-write /sys/devices/system/cpu/cpu4/cpufreq/interactive/max_freq_hysteresis 39000
-
-write /sys/module/cpu_boost/parameters/input_boost_freq "0:1036800"
-write /sys/module/cpu_boost/parameters/input_boost_ms 150
+write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor "schedutil"
+write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/up_rate_limit_us 500
+write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/down_rate_limit_us 20000
+write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/iowait_boost_enable 1
+write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 300000
 
 sleep 20
 

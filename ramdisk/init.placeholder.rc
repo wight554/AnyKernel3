@@ -51,7 +51,7 @@ on property:sys.boot_completed=1
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
     chown system system /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
 
-    exec u:r:init:s0 -- /init.emeriss.sh
-    exec u:r:su:s0 root root -- /init.emeriss.sh
-    exec u:r:magisk:s0 root root -- /init.emeriss.sh
-    exec u:r:supersu:s0 root root -- /init.emeriss.sh
+    exec u:r:init:s0 -- /init.placeholder.sh
+    exec u:r:su:s0 root root -- /init.placeholder.sh
+    exec u:r:magisk:s0 root root -- /init.placeholder.sh
+    exec u:r:supersu:s0 root root -- /init.placeholder.sh

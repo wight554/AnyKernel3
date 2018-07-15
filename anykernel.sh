@@ -4,7 +4,7 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=Emeriss by Wight554 @ xda-developers
+kernel.string=PlaceholderKernel by Wight554
 do.devicecheck=1
 do.modules=0
 do.cleanup=1
@@ -31,7 +31,7 @@ chown -R root:root $ramdisk/*;
 dump_boot;
 
 # begin ramdisk changes
-insert_line init.rc "init.emeriss.rc" after "import /init.usb.rc" "import /init.emeriss.rc";
+insert_line init.rc "init.placeholder.rc" after "import /init.usb.rc" "import /init.placeholder.rc";
 
 # sepolicy
 $bin/magiskpolicy --load sepolicy --save sepolicy \

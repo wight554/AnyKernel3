@@ -38,6 +38,8 @@ $bin/magiskpolicy --load sepolicy --save sepolicy \
 "allow init rootfs file execute_no_trans" \
 ;
 
+# end ramdisk changes
+
 write_boot;
 
 ## end install

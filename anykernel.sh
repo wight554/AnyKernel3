@@ -10,6 +10,7 @@ do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
 device.name1=chiron
+supported.versions=
 '; } # end properties
 
 # shell variables
@@ -24,7 +25,6 @@ ramdisk_compression=auto;
 ## AnyKernel file attributes
 # set permissions/ownership for included ramdisk files
 chmod -R 750 $ramdisk/*;
-chmod -R 755 $ramdisk/sbin;
 chown -R root:root $ramdisk/*;
 
 ## AnyKernel install

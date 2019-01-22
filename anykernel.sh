@@ -10,7 +10,7 @@ do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
 device.name1=chiron
-supported.versions=9
+supported.versions=8-9
 '; } # end properties
 
 # shell variables

@@ -28,5 +28,16 @@ function write() {
     write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/iowait_boost_enable 1
     write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/up_rate_limit_us 500
 
+    # zram setup
+    swapoff /dev/block/zram0
+    write /sys/block/zram0/reset 1
+    write /sys/block/zram0/comp_algorithm lz4
+    write /sys/block/zram0/disksize 1073741824
+    write /sys/block/zram0/max_comp_streams 8
+    write /proc/sys/vm/page-cluster 0
+    write /proc/sys/vm/swappiness 100
+    mkswap /dev/block/zram0
+    swapon /dev/block/zram0
+
     sleep 20
 }&

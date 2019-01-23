@@ -29,9 +29,7 @@ chown -R root:root $ramdisk/*;
 
 ## AnyKernel install
 dump_boot;
-
 # begin ramdisk changes
-insert_line init.rc "init.placeholder.rc" after "import /init.usb.rc" "import /init.placeholder.rc";
 
 # sepolicy
 $bin/magiskpolicy --load sepolicy --save sepolicy \

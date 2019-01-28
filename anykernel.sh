@@ -37,6 +37,8 @@ if [ ! -d .backup ]; then
     sed -i 's;selinux/plat_sepolicy.cil;selinux/plat_sepolicy.xxx;g' init;
     $bin/magiskpolicy --compile-split --save sepolicy \
         "allow init rootfs file execute_no_trans" \
+        "allow init sysfs file { open write }" \
+        "allow init sysfs_devices_system_cpu file write" \
     ;
 fi;
 

@@ -34,13 +34,22 @@ dump_boot;
 # Kill init's search for Treble split sepolicy if Magisk is not present
 # This will force init to load the monolithic sepolicy at /
 if [ ! -d .backup ]; then
-    sed -i 's;selinux/plat_sepolicy.cil;selinux/plat_sepolicy.xxx;g' init;
-    $bin/magiskpolicy --compile-split --save sepolicy \
+    if [ -f sepolicy ]; then
+        $bin/magiskpolicy --load sepolicy --save sepolicy \
         "allow init proc file { open write }" \
         "allow init rootfs file execute_no_trans" \
         "allow init sysfs file { open write }" \
         "allow init sysfs_devices_system_cpu file write" \
-    ;
+        ;
+    else
+        sed -i 's;selinux/plat_sepolicy.cil;selinux/plat_sepolicy.xxx;g' init;
+        $bin/magiskpolicy --compile-split --save sepolicy \
+        "allow init proc file { open write }" \
+        "allow init rootfs file execute_no_trans" \
+        "allow init sysfs file { open write }" \
+        "allow init sysfs_devices_system_cpu file write" \
+        ;
+    fi
 fi;
 
 # end ramdisk changes

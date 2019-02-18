@@ -4,9 +4,6 @@ on init
     write /dev/stune/top-app/schedtune.boost 10
     write /dev/stune/top-app/schedtune.prefer_idle 1
 
-    # set interaction lock idle time
-    write /sys/devices/virtual/graphics/fb0/idle_time 100
-
     # zram madness
     exec u:r:init:s0 -- /system/bin/swapoff /dev/block/zram0
     exec u:r:su:s0 -- /system/bin/swapoff /dev/block/zram0

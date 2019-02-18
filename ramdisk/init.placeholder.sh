@@ -33,5 +33,8 @@ function write() {
     write /proc/sys/vm/page-cluster 0
     write /proc/sys/vm/swappiness 100
 
+    # set interaction lock idle time
+    write /sys/devices/virtual/graphics/fb0/idle_time 100
+
     sleep 20
 }&

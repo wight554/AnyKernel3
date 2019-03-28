@@ -20,12 +20,10 @@ function write() {
     # configure governor settings
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "schedutil"
     write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/down_rate_limit_us 20000
-    write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/iowait_boost_enable 1
     write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/up_rate_limit_us 10000
 
     write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor "schedutil"
     write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/down_rate_limit_us 20000
-    write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/iowait_boost_enable 1
     write /sys/devices/system/cpu/cpu4/cpufreq/schedutil/up_rate_limit_us 10000
 
     write /proc/sys/vm/page-cluster 0

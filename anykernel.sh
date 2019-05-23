@@ -31,27 +31,20 @@ chown -R root:root $ramdisk/*;
 dump_boot;
 # begin ramdisk changes
 
-# Kill init's search for Treble split sepolicy if Magisk is not present
-# This will force init to load the monolithic sepolicy at /
-if [ ! -d .backup ]; then
-    if [ -f sepolicy ]; then
-        $bin/magiskpolicy --load sepolicy --save sepolicy \
-        "allow init proc file { open write }" \
-        "allow init rootfs file execute_no_trans" \
-        "allow init sysfs file { open write }" \
-        "allow init sysfs_devices_system_cpu file write" \
-        "allow init sysfs_graphics file { open write }" \
-        ;
-    else
-        sed -i 's;selinux/plat_sepolicy.cil;selinux/plat_sepolicy.xxx;g' init;
-        $bin/magiskpolicy --compile-split --save sepolicy \
-        "allow init proc file { open write }" \
-        "allow init rootfs file execute_no_trans" \
-        "allow init sysfs file { open write }" \
-        "allow init sysfs_devices_system_cpu file write" \
-        "allow init sysfs_graphics file { open write }" \
-        ;
-    fi
+# If the kernel image and dtbs are separated in the zip
+decompressed_image=/tmp/anykernel/kernel/Image
+compressed_image=$decompressed_image.gz
+if [ -f $compressed_image ]; then
+  # Hexpatch the kernel if Magisk is installed ('skip_initramfs' -> 'want_initramfs')
+  if [ -d $ramdisk/.backup ]; then
+    ui_print " "; ui_print "Magisk detected! Patching kernel so reflashing Magisk is not necessary...";
+    $bin/magiskboot --decompress $compressed_image $decompressed_image;
+    $bin/magiskboot --hexpatch $decompressed_image 736B69705F696E697472616D667300 77616E745F696E697472616D667300;
+    $bin/magiskboot --compress=gzip $decompressed_image $compressed_image;
+  fi;
+
+  # Concatenate all of the dtbs to the kernel
+  cat $compressed_image /tmp/anykernel/dtbs/*.dtb > /tmp/anykernel/Image.gz-dtb;
 fi;
 
 # end ramdisk changes

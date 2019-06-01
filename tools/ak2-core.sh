@@ -159,7 +159,6 @@ unpack_ramdisk() {
 }
 dump_boot() {
   split_boot;
-  unpack_ramdisk;
 }
 
 # repack ramdisk then build and write image
@@ -408,7 +407,6 @@ flash_boot() {
   fi;
 }
 write_boot() {
-  repack_ramdisk;
   flash_boot;
   flash_dtbo;
 }

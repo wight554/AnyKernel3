@@ -35,6 +35,15 @@ dump_boot;
 decompressed_image=/tmp/anykernel/kernel/Image
 compressed_image=$decompressed_image.gz
 if [ -f $compressed_image ]; then
+  if [ ! -f $split_img/ramdisk.cpio* ]; then
+    if [ ! -d $ramdisk/.backup ]; then
+      ui_print " "; ui_print "Magisk not detected! You must flash Magisk to be able to use this kernel."; exit 1;
+    fi;
+  else
+    unpack_ramdisk
+    repack_ramdisk
+  fi;
+
   # Hexpatch the kernel if Magisk is installed ('skip_initramfs' -> 'want_initramfs')
   if [ -d $ramdisk/.backup ]; then
     ui_print " "; ui_print "Magisk detected! Patching kernel so reflashing Magisk is not necessary...";

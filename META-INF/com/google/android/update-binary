@@ -4,10 +4,13 @@
 
 OUTFD=/proc/self/fd/$2;
 ZIPFILE="$3";
-DIR=$(dirname "$ZIPFILE");
+
+ps | grep zygote | grep -v grep >/dev/null && BOOTMODE=true || BOOTMODE=false;
+$BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && BOOTMODE=true;
+
+$BOOTMODE && DIR=/sdcard || DIR=$(dirname "$ZIPFILE");
 
 test "$home" || home=/tmp/anykernel;
-parent=$(dirname $home);
 
 ui_print() {
   until [ ! "$1" ]; do
@@ -27,14 +30,15 @@ int2ver() {
   fi;
 }
 cleanup() {
-  cd $parent;
+  cd $(dirname $home);
   rm -rf $home;
 }
 debugging() {
   case $(basename "$ZIPFILE" .zip) in
     *-debugging)
-      ui_print " " "Creating debugging archive in zip directory...";
-      $bb tar -czvf "$DIR/anykernel3-$(date +%Y-%m-%d_%H%M%S)-debug.tgz" $parent/*;
+      ui_print " " "Creating debugging archive in $DIR...";
+      test -f /tmp/recovery.log && log=/tmp/recovery.log;
+      $bb tar -czf "$DIR/anykernel3-$(date +%Y-%m-%d_%H%M%S)-debug.tgz" $home $log;
     ;;
   esac;
 }
@@ -45,7 +49,7 @@ unmount_all() {
     $bb umount /system_root;
   fi;
   $bb umount /system;
-  $bb umount /vendor;
+  umount /vendor;
   $bb umount /data) 2>/dev/null;
 }
 abort() {
@@ -67,6 +71,17 @@ unzip -o "$ZIPFILE";
 if [ $? != 0 -o ! "$(ls tools)" ]; then
   abort "Unzip failed. Aborting...";
 fi;
+for arch32 in x86 arm; do
+  if [ -d $home/tools/$arch32 ]; then
+    bb=$home/tools/$arch32/busybox;
+    chmod 755 $bb;
+    $bb >/dev/null 2>&1;
+    if [ $? == 0 ]; then
+      $bb mv -f $home/tools/$arch32/* $home/tools;
+      break;
+    fi;
+  fi;
+done;
 bb=$home/tools/busybox;
 chmod 755 $bb;
 $bb chmod -R 755 tools bin;
